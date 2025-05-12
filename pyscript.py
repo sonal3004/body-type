@@ -126,7 +126,8 @@ with mp_pose.Pose(static_image_mode=True) as pose:
                         return [os.path.join(folder_path, img) for img in selected_images]
                 return []
             genai.configure(api_key="AIzaSyC6zIuxX9VrZwhsPoBauzw_ByRcz6u3w8I")  # Replace with your actual API key
-
+            val=True
+            routine={}
             def generate_7_day_routine(body_type: str):
                 prompt = f"""
             You are a professional wellness and fitness advisor.
@@ -184,6 +185,8 @@ with mp_pose.Pose(static_image_mode=True) as pose:
                     print("JSON parsing failed:", e)
                     routine_dict = {}
                     return routine_dict
+            if val:
+                routine = generate_7_day_routine(body_type)
             if body_type in suggestions:
                 s = suggestions[body_type]
                 result = {
@@ -203,9 +206,10 @@ with mp_pose.Pose(static_image_mode=True) as pose:
                         "images": get_image_paths(body_type, gender, "Outfits")
                     },
                     "posture": s["posture"],
-                    "routine": generate_7_day_routine(body_type)
+                        "routine": routine
                 }
-
+                
+                
                 # Dump to JSON
                 result_json = json.dumps(result, indent=4)
                 print(result_json)
