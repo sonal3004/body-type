@@ -5,7 +5,7 @@ import random
 import os
 import json
 from PIL import Image
-
+import google.generativeai as genai
 # Simulate file upload
 input_image_path = "C:\\Users\\PC\\Desktop\\body-estimator\\BodyType_Images\\Apple\\Female\\Outfits\\000010.jpg"  # Replace with actual image path
 image = cv2.imread(input_image_path)
@@ -125,7 +125,65 @@ with mp_pose.Pose(static_image_mode=True) as pose:
                         selected_images = random.sample(image_files, count)
                         return [os.path.join(folder_path, img) for img in selected_images]
                 return []
+            genai.configure(api_key="AIzaSyC6zIuxX9VrZwhsPoBauzw_ByRcz6u3w8I")  # Replace with your actual API key
 
+            def generate_7_day_routine(body_type: str):
+                prompt = f"""
+            You are a professional wellness and fitness advisor.
+
+            Generate a personalized and dynamic 7-day health and fitness routine for a person with a **{body_type}** body type.
+
+            Each day should contain:
+            - A customized workout or exercise plan
+            - A yoga pose or short yoga routine
+            - A nutrition focus or healthy meal goal
+            - A hydration goal
+            - A mental wellness or stress relief tip
+            - A sleep or recovery suggestion
+            - One small healthy lifestyle habit or task
+            
+            ### Instructions:
+            - Do NOT repeat any previous patterns, advice, or phrasing.
+            - Make each day distinct and creative in structure and tone.
+            - Use randomized elements where appropriate.
+            - Each day's plan must feel like a fresh entry, not a reworded version.
+            - Reflect the **specific body type needs** (e.g., Pear = lower body focus, Apple = cardio, etc.).
+            - Include diverse fitness methods (e.g., calisthenics, dance, circuits, resistance bands, outdoor workouts, etc.).
+            - Nutrition must vary daily (e.g., low-carb day, hydration-focused day, plant-based day).
+            - Mental wellness tips should range from journaling and breathing to forest bathing or digital detox.
+            - Sleep advice must differ (e.g., lavender oil, blue light blockers, pre-sleep rituals).
+            - Use engaging, informal yet informative language like a human coach would.
+
+            The routine should:
+            - Be different on every call
+            - Reflect the body type’s typical needs (e.g., Pear: lower body focus, Apple: cardio focus, etc.)
+            - Provide new content each time it should not be repeated 
+            - Be returned in **JSON format** with keys "Day 1", "Day 2", ..., each with a dictionary of all 7 fields.
+                """
+
+                                
+                model = genai.GenerativeModel(model_name="models/gemini-2.0-flash")
+                response = model.generate_content(prompt)
+
+                # Step 1: Extract the raw text
+                routine = response.text.strip()
+
+                # Step 2: Remove triple backticks and optional "json" label
+                if routine.startswith("```json"):
+                    routine = routine[7:]  # Remove ```json\n
+                elif routine.startswith("```"):
+                    routine = routine[3:]  # Remove ```\n
+
+                routine = routine.strip("`").strip()  # Remove any trailing backticks and whitespace
+                routine_dict={}
+                # Step 3: Parse JSON
+                try:
+                    routine_dict = json.loads(routine)
+                    return routine_dict
+                except json.JSONDecodeError as e:
+                    print("JSON parsing failed:", e)
+                    routine_dict = {}
+                    return routine_dict
             if body_type in suggestions:
                 s = suggestions[body_type]
                 result = {
@@ -144,7 +202,8 @@ with mp_pose.Pose(static_image_mode=True) as pose:
                         "tips": s["outfit"][gender],
                         "images": get_image_paths(body_type, gender, "Outfits")
                     },
-                    "posture": s["posture"]
+                    "posture": s["posture"],
+                    "routine": generate_7_day_routine(body_type)
                 }
 
                 # Dump to JSON
